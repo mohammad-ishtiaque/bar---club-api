@@ -35,9 +35,7 @@ const upload = multer({
 // Signup
 router.post('/signup', async (req, res) => {
   try {
-    const { fullname, email, password, confirmPassword, age } = req.body;
-
-   
+    const { fullname, email, password, confirmPassword, age, role } = req.body;
 
     if (password !== confirmPassword) {
       return res.status(400).json({ message: 'Passwords do not match' });
@@ -48,10 +46,35 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    const user = new User({ fullname, email, password, age });
+    // Validate role if provided
+    if (role && !['admin', 'vendor', 'user'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role. Must be admin, vendor, or user' });
+    }
+
+    const user = new User({ 
+      fullname, 
+      email, 
+      password, 
+      age,
+      role: role || 'user' // If role is not provided, defaults to 'user'
+    });
     await user.save();
 
-    res.status(201).json({ message: 'User created successfully' });
+    // Generate token for immediate login
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '1h'
+    });
+
+    res.status(201).json({ 
+      message: 'User created successfully',
+      token,
+      user: {
+        _id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        role: user.role
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

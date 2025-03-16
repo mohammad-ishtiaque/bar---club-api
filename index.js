@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const eventRoutes = require('./routes/event');
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/event', eventRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

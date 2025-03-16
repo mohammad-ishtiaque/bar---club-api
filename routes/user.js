@@ -41,18 +41,18 @@ router.put('/profile', protect, async (req, res) => {
   }
 });
 
-// 2a. Delete Account
-router.delete('/settings/delete-account', protect, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+// // 2a. Delete Account
+// router.delete('/settings/delete-account', protect, async (req, res) => {
+//   try {
+//     const user = await User.findById(req.user._id);
+//     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    await user.deleteOne();
-    res.json({ message: 'User deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
+//     await user.deleteOne();
+//     res.json({ message: 'User deleted successfully' });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// });
 
 // 2b. Change Password
 router.put('/settings/change-password', protect, async (req, res) => {
