@@ -20,7 +20,14 @@ const userSchema = new mongoose.Schema(
             type: Number,
             required: true,
         },
-
+        profilePicture: {
+            type: String,  // Will store base64 string of the image
+            default: null
+        },
+        profilePictureType: {  // To store the mime type of the image
+            type: String,
+            default: null
+        }
     },
     { timestamps: true }
 );

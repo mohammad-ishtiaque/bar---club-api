@@ -2,9 +2,31 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const User = require('../models/User');
 const PasswordReset = require('../models/PasswordReset');
 const { sendResetCode } = require('../utils/sendEmail');
+
+// Configure multer for memory storage instead of disk
+const storage = multer.memoryStorage();
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Not an image! Please upload an image.'), false);
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
 
 // Signup
 router.post('/signup', async (req, res) => {
@@ -122,6 +144,50 @@ router.post('/resend-otp', async (req, res) => {
     await sendResetCode(email, code);
     res.json({ message: 'New reset code sent to email' });
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Upload Profile Picture
+router.post('/upload-profile-picture', upload.single('profilePicture'), async (req, res) => {
+  try {
+    console.log('Upload request received');
+    
+    if (!req.file) {
+      return res.status(400).json({ message: 'Please upload a file' });
+    }
+
+    // Get user ID from JWT token
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.userId;
+
+    // Convert image buffer to base64
+    const base64Image = req.file.buffer.toString('base64');
+
+    // Update user profile with base64 image
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.profilePicture = base64Image;
+    user.profilePictureType = req.file.mimetype;
+    await user.save();
+
+    res.json({ 
+      message: 'Profile picture uploaded successfully',
+      profilePictureType: req.file.mimetype
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
     res.status(500).json({ message: error.message });
   }
 });
