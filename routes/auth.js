@@ -102,4 +102,28 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+// Resend OTP
+router.post('/resend-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    // Delete any existing codes for this email
+    await PasswordReset.deleteMany({ email });
+
+    // Generate new 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    await PasswordReset.create({ email, code });
+
+    await sendResetCode(email, code);
+    res.json({ message: 'New reset code sent to email' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;
