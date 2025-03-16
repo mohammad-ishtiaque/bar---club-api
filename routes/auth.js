@@ -26,7 +26,11 @@ const upload = multer({
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
   }
-});
+}).fields([
+  { name: 'verificationImage', maxCount: 1 },
+  { name: 'image', maxCount: 1 },
+  { name: 'file', maxCount: 1 }
+]);
 
 // Signup
 router.post('/signup', async (req, res) => {
@@ -148,43 +152,92 @@ router.post('/resend-otp', async (req, res) => {
   }
 });
 
-// Upload Profile Picture
-router.post('/upload-profile-picture', upload.single('profilePicture'), async (req, res) => {
-  try {
-    console.log('Upload request received');
-    
-    if (!req.file) {
-      return res.status(400).json({ message: 'Please upload a file' });
-    }
+// Upload Age Verification Image
+router.post('/upload-age-verification', (req, res) => {
+  upload(req, res, async function(err) {
+    try {
+      if (err instanceof multer.MulterError) {
+        console.error('Multer error:', err);
+        return res.status(400).json({ message: 'File upload error: ' + err.message });
+      } else if (err) {
+        console.error('Unknown error:', err);
+        return res.status(500).json({ message: 'Unknown error occurred during upload' });
+      }
 
-    // Get user ID from JWT token
+      console.log('Files received:', req.files);
+      
+      // Get the uploaded file from any of the allowed field names
+      const file = req.files?.verificationImage?.[0] || req.files?.image?.[0] || req.files?.file?.[0];
+      
+      if (!file) {
+        return res.status(400).json({ message: 'Please upload a verification document' });
+      }
+
+      // Get user ID from JWT token
+      const token = req.headers.authorization?.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({ message: 'No token provided' });
+      }
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const userId = decoded.userId;
+
+      // Convert image buffer to base64
+      const base64Image = file.buffer.toString('base64');
+
+      // Update user with verification image
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Check if verification is already approved
+      if (user.ageVerificationStatus === 'approved') {
+        return res.status(400).json({ message: 'Age already verified' });
+      }
+
+      user.ageVerificationImage = base64Image;
+      user.ageVerificationStatus = 'pending';
+      user.verificationDate = new Date();
+      user.verificationComment = null; // Reset any previous comments
+      await user.save();
+
+      res.json({ 
+        message: 'Age verification document uploaded successfully',
+        status: 'pending',
+        submissionDate: user.verificationDate
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      if (error.name === 'JsonWebTokenError') {
+        return res.status(401).json({ message: 'Invalid token' });
+      }
+      res.status(500).json({ message: error.message });
+    }
+  });
+});
+
+// Get Verification Status
+router.get('/verification-status', async (req, res) => {
+  try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.userId;
+    const user = await User.findById(decoded.userId);
 
-    // Convert image buffer to base64
-    const base64Image = req.file.buffer.toString('base64');
-
-    // Update user profile with base64 image
-    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    user.profilePicture = base64Image;
-    user.profilePictureType = req.file.mimetype;
-    await user.save();
-
-    res.json({ 
-      message: 'Profile picture uploaded successfully',
-      profilePictureType: req.file.mimetype
+    res.json({
+      status: user.ageVerificationStatus,
+      comment: user.verificationComment,
+      submissionDate: user.verificationDate
     });
   } catch (error) {
-    console.error('Upload error:', error);
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ message: 'Invalid token' });
     }

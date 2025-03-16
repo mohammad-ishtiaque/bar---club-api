@@ -20,12 +20,21 @@ const userSchema = new mongoose.Schema(
             type: Number,
             required: true,
         },
-        profilePicture: {
-            type: String,  // Will store base64 string of the image
+        ageVerificationImage: {
+            type: String,  // Will store base64 string of the verification document
             default: null
         },
-        profilePictureType: {  // To store the mime type of the image
+        ageVerificationStatus: {
             type: String,
+            enum: ['pending', 'approved', 'rejected'],
+            default: 'pending'
+        },
+        verificationComment: {
+            type: String,  // For admin feedback if rejected
+            default: null
+        },
+        verificationDate: {
+            type: Date,  // When the verification was submitted
             default: null
         }
     },
