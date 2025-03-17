@@ -27,20 +27,48 @@ const userSchema = new mongoose.Schema(
         },
         ageVerificationImage: {
             type: String,  // Will store base64 string of the verification document
-            default: null
+            default: null,
+            validate: {
+                validator: function(v) {
+                    // Only allow non-null values for users and vendors
+                    return this.role === 'admin' ? v === null : true;
+                },
+                message: 'Age verification is not required for admin roles'
+            }
         },
         ageVerificationStatus: {
             type: String,
             enum: ['pending', 'approved', 'rejected'],
-            default: 'pending'
+            default: 'pending',
+            validate: {
+                validator: function(v) {
+                    // Only allow non-pending status for users and vendors
+                    return this.role === 'admin' ? v === 'pending' : true;
+                },
+                message: 'Age verification status is not applicable for admin roles'
+            }
         },
         verificationComment: {
             type: String,  // For admin feedback if rejected
-            default: null
+            default: null,
+            validate: {
+                validator: function(v) {
+                    // Only allow comments for users and vendors
+                    return this.role === 'admin' ? v === null : true;
+                },
+                message: 'Verification comments are not applicable for admin roles'
+            }
         },
         verificationDate: {
             type: Date,  // When the verification was submitted
-            default: null
+            default: null,
+            validate: {
+                validator: function(v) {
+                    // Only allow dates for users and vendors
+                    return this.role === 'admin' ? v === null : true;
+                },
+                message: 'Verification date is not applicable for admin roles'
+            }
         }
     },
     { timestamps: true }

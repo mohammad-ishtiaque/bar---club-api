@@ -6,6 +6,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const eventRoutes = require('./routes/event');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api', eventRoutes);  // Added event routes
+app.use('/api/admin', adminRoutes);  // Added admin routes
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
@@ -43,6 +45,10 @@ app.listen(PORT, () => {
     console.log('GET /api/events');
     console.log('GET /api/admin/all-events');
     console.log('GET /api/vendor/my-events');
+    console.log('GET /api/admin/users');
+    console.log('GET /api/admin/pending-verifications');
+    console.log('GET /api/admin/user-verification/:userId');
+    console.log('PUT /api/admin/verify-user/:userId');
 });
 
 
