@@ -20,6 +20,11 @@ const userSchema = new mongoose.Schema(
             type: Number,
             required: true,
         },
+        role: {
+            type: String,
+            enum: ['user', 'admin', 'vendor'],
+            default: 'user'
+        },
         ageVerificationImage: {
             type: String,  // Will store base64 string of the verification document
             default: null

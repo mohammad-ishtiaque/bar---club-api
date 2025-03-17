@@ -35,9 +35,7 @@ const upload = multer({
 // Signup
 router.post('/signup', async (req, res) => {
   try {
-    const { fullname, email, password, confirmPassword, age } = req.body;
-
-   
+    const { fullname, email, password, confirmPassword, age, role } = req.body;
 
     if (password !== confirmPassword) {
       return res.status(400).json({ message: 'Passwords do not match' });
@@ -48,7 +46,8 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    const user = new User({ fullname, email, password, age });
+    // Create user with role (will default to 'user' if not specified)
+    const user = new User({ fullname, email, password, age, role });
     await user.save();
 
     res.status(201).json({ message: 'User created successfully' });

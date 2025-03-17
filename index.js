@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const eventRoutes = require('./routes/event');
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api', eventRoutes);  // Added event routes
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
@@ -37,6 +39,10 @@ app.listen(PORT, () => {
     console.log('POST /api/auth/upload-profile-picture');
     console.log('POST /api/auth/login');
     console.log('POST /api/auth/signup');
+    console.log('POST /api/add-new-events');
+    console.log('GET /api/events');
+    console.log('GET /api/admin/all-events');
+    console.log('GET /api/vendor/my-events');
 });
 
 
