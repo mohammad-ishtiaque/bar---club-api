@@ -8,6 +8,7 @@ const userRoutes = require('./routes/user');
 const eventRoutes = require('./routes/event');
 const adminRoutes = require('./routes/admin');
 const profileRoutes = require('./routes/profile');
+const adminProfileRoutes = require('./routes/adminProfile');
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/user', userRoutes);
 app.use('/api', eventRoutes);  // Added event routes
 app.use('/api/admin', adminRoutes);  // Added admin routes
 app.use('/api/profile', profileRoutes);  // Added profile routes
+app.use('/api/admin', adminProfileRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
