@@ -64,9 +64,47 @@ const userSchema = new mongoose.Schema(
                 },
                 message: 'Verification date is only applicable for user roles'
             }
-        }
+        },
+        contactNo: {
+            type: String,
+            required: false,
+            validate: {
+                validator: function(v) {
+                    return this.role === 'admin' ? v === null : true;
+                },
+                message: 'Contact number is only applicable for admin roles'
+            }
+        },
+        address: {
+            type: String,
+            required: false,
+            validate: {
+                validator: function(v) {
+                    return this.role === 'admin' ? v === null : true;
+                },
+                message: 'Address is only applicable for admin roles'
+            }
+        },
     },
-    { timestamps: true }
+    { 
+        timestamps: true,
+        toJSON: {
+            transform: function(doc, ret) {
+                if (ret.role === 'admin' || ret.role === 'vendor') {
+                    // Remove user-specific verification fields for admin and vendor
+                    delete ret.ageVerificationImage;
+                    delete ret.ageVerificationStatus;
+                    delete ret.verificationComment;
+                    delete ret.verificationDate;
+                } else if (ret.role === 'user' || ret.role === 'vendor') {
+                    // Remove admin-specific fields for user
+                    delete ret.contactNo;
+                    delete ret.address;
+                }
+                return ret;
+            }
+        }
+    }
 );
 
 // Hash password before saving
