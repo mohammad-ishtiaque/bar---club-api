@@ -15,6 +15,7 @@ The platform offers robust age verification functionality, event management capa
 │   └── User.js              # User model with role-based access control
 ├── routes/
 │   ├── admin.js            # Administrative endpoints for user verification
+│   ├── adminProfile.js     # Admin profile management endpoints
 │   ├── auth.js             # Authentication and authorization routes
 │   ├── event.js            # Event management endpoints
 │   ├── profile.js          # User profile management
