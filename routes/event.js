@@ -115,7 +115,7 @@ router.patch('/admin/event-status/:eventId', protect, isAdmin, async (req, res) 
 });
 
 // Update event (owner or admin only)
-router.put('/events/:eventId', protect, async (req, res) => {
+router.put('/events/:eventId', isVendor , async (req, res) => {
   try {
     const event = await Event.findById(req.params.eventId);
     if (!event) {
@@ -149,7 +149,7 @@ router.put('/events/:eventId', protect, async (req, res) => {
 });
 
 // Delete event (admin only)
-router.delete('/admin/events/:eventId', protect, isAdmin, async (req, res) => {
+router.delete('/admin/events/:eventId', protect, isAdminOrVendor, async (req, res) => {
   try {
     const event = await Event.findByIdAndDelete(req.params.eventId);
     if (!event) {
