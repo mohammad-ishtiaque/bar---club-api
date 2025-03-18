@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Feedback = require('../models/Feedback');
 // const checkUsers = require('../check-users'); // Import the checkUsers function
 
 // Admin middleware - checks if user is an admin
@@ -126,56 +127,24 @@ router.put('/verify-user/:userId', adminProtect, async (req, res) => {
   }
 });
 
-// // GET /api/admin/verification-stats - Get user verification statistics
-// router.get('/verification-stats', adminProtect, async (req, res) => {
-//   try {
-//     // Get all users
-//     const allUsers = await User.find({});
-    
-//     // Get users with pending verification and image
-//     const pendingUsers = await User.find({ 
-//       ageVerificationStatus: 'pending',
-//       ageVerificationImage: { $ne: null }
-//     });
-    
-//     // Get all pending users regardless of image
-//     const allPending = await User.find({ ageVerificationStatus: 'pending' });
-    
-//     // Get users with images
-//     const usersWithImages = await User.find({ ageVerificationImage: { $ne: null } });
-    
-//     // Prepare detailed user info
-//     const userDetails = allUsers.map(user => ({
-//       id: user._id,
-//       email: user.email,
-//       role: user.role,
-//       status: user.ageVerificationStatus,
-//       hasImage: user.ageVerificationImage !== null
-//     }));
-    
-//     res.json({
-//       stats: {
-//         totalUsers: allUsers.length,
-//         pendingUsersWithImage: pendingUsers.length,
-//         allPendingUsers: allPending.length,
-//         usersWithImages: usersWithImages.length
-//       },
-//       userDetails
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// });
+// Get all feedback submissions
+router.get('/feedback', adminProtect, async (req, res) => {
+  try {
+    const feedback = await Feedback.find().sort({ createdAt: -1 }).populate('userId', 'fullname email');
+    res.json(feedback);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
-// // GET /api/admin/user-stats - Get user statistics (using check-users.js)
-// router.get('/user-stats', adminProtect, async (req, res) => {
-//   try {
-//     // This directly uses the check-users.js file
-//     const stats = await checkUsers();
-//     res.json(stats);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// });
+// Get feedback count
+router.get('/feedback/count', adminProtect, async (req, res) => {
+  try {
+    const count = await Feedback.countDocuments();
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 module.exports = router; 
