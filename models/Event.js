@@ -22,11 +22,11 @@ const eventSchema = new mongoose.Schema({
     required: true
   },
   images: [{
-    data: {
-      type: String,  // Base64 string
+    path: {
+      type: String,
       required: true
     },
-    contentType: {
+    filename: {
       type: String,
       required: true
     }

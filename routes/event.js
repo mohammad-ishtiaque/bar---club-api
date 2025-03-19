@@ -3,9 +3,26 @@ const router = express.Router();
 const Event = require('../models/Event');
 const { protect, isAdmin, isVendor, isAdminOrVendor } = require('../utils/protect');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
-// Configure multer for file upload
-const storage = multer.memoryStorage();
+// Configure multer for file upload with disk storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = 'uploads/events';
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Create unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
 const upload = multer({ 
   storage: storage,
   limits: {
@@ -38,10 +55,10 @@ router.post('/add-new-events', protect, isAdminOrVendor, upload.array('images', 
   try {
     const { eventName, bar, location, coverCharge, description, mapReference } = req.body;
     
-    // Convert uploaded files to base64
+    // Store file paths instead of base64
     const images = req.files ? req.files.map(file => ({
-      data: file.buffer.toString('base64'),
-      contentType: file.mimetype
+      path: file.path,
+      filename: file.filename
     })) : [];
 
     const newEvent = new Event({
@@ -59,6 +76,14 @@ router.post('/add-new-events', protect, isAdminOrVendor, upload.array('images', 
     const savedEvent = await newEvent.save();
     res.status(201).json(savedEvent);
   } catch (error) {
+    // Clean up uploaded files if event creation fails
+    if (req.files) {
+      req.files.forEach(file => {
+        fs.unlink(file.path, err => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      });
+    }
     res.status(400).json({ message: error.message });
   }
 });
@@ -151,10 +176,21 @@ router.put('/events/:eventId', isVendor , async (req, res) => {
 // Delete event (admin only)
 router.delete('/admin/events/:eventId', protect, isAdminOrVendor, async (req, res) => {
   try {
-    const event = await Event.findByIdAndDelete(req.params.eventId);
+    const event = await Event.findById(req.params.eventId);
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
+
+    // Delete associated image files
+    if (event.images && event.images.length > 0) {
+      event.images.forEach(image => {
+        fs.unlink(image.path, err => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      });
+    }
+
+    await Event.findByIdAndDelete(req.params.eventId);
     res.json({ message: 'Event deleted successfully' });
   } catch (error) {
     res.status(400).json({ message: error.message });
