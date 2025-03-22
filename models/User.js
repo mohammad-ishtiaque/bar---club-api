@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema(
             enum: ['user', 'admin', 'vendor'],
             default: 'user'
         },
+        avatar: {
+            type: String,  // Will store base64 string of the avatar
+            default: null
+        },
         ageVerificationImage: {
             type: String,  // Will store base64 string of the verification document
             default: null,
@@ -69,42 +73,28 @@ const userSchema = new mongoose.Schema(
         contactNo: {
             type: String,
             required: false,
-            validate: {
-                validator: function(v) {
-                    return this.role === 'admin' ? v === null : true;
-                },
-                message: 'Contact number is only applicable for admin roles'
-            }
+            
         },
         address: {
             type: String,
             required: false,
-            validate: {
-                validator: function(v) {
-                    return this.role === 'admin' ? v === null : true;
-                },
-                message: 'Address is only applicable for admin roles'
-            }
+            
         },
     },
     { 
         timestamps: true,
-        toJSON: {
-            transform: function(doc, ret) {
-                if (ret.role === 'admin' || ret.role === 'vendor') {
-                    // Remove user-specific verification fields for admin and vendor
-                    delete ret.ageVerificationImage;
-                    delete ret.ageVerificationStatus;
-                    delete ret.verificationComment;
-                    delete ret.verificationDate;
-                } else if (ret.role === 'user' || ret.role === 'vendor') {
-                    // Remove admin-specific fields for user
-                    delete ret.contactNo;
-                    delete ret.address;
-                }
-                return ret;
-            }
-        }
+        // toJSON: {
+        //     transform: function(doc, ret) {
+        //         if (ret.role === 'admin' || ret.role === 'vendor') {
+        //             // Remove user-specific verification fields for admin and vendor
+        //             delete ret.ageVerificationImage;
+        //             delete ret.ageVerificationStatus;
+        //             delete ret.verificationComment;
+        //             delete ret.verificationDate;
+        //         }
+        //         return ret;
+        //     }
+        // }
     }
 );
 

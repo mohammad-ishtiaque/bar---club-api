@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
 const User = require('../models/User');
+const { createUploadMiddleware, fileToBase64 } = require('../utils/uploadConfig');
 
 // Middleware to verify JWT
 const protect = async (req, res, next) => {
@@ -22,23 +24,81 @@ const protect = async (req, res, next) => {
   }
 };
 
-// 1. Edit Profile (Update username)
-router.put('/profile', protect, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+// Create upload middleware for avatar with 1MB limit
+const uploadAvatar = createUploadMiddleware('avatar', 1);
 
-    user.username = req.body.username || user.username;
-    const updatedUser = await user.save();
-    
-    res.json({
-      _id: updatedUser._id,
-      username: updatedUser.username,
-      email: updatedUser.email
-    });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
+// 1. Edit Profile
+router.put('/edit-profile', protect, (req, res) => {
+  uploadAvatar(req, res, async function(err) {
+    try {
+      if (err instanceof multer.MulterError) {
+        console.log('Multer error:', err);
+        return res.status(400).json({ message: 'File upload error: ' + err.message });
+      } else if (err) {
+        console.log('Unknown upload error:', err);
+        return res.status(500).json({ message: 'Unknown error occurred during upload' });
+      }
+
+      // Log file information for debugging
+      console.log('File received:', req.file);
+
+      const { fullname, email, contactNo, location } = req.body;
+      const userId = req.user._id;
+
+      // Check if email is already taken by another user
+      if (email) {
+        const existingUser = await User.findOne({ email, _id: { $ne: userId } });
+        if (existingUser) {
+          return res.status(400).json({ message: 'Email is already in use' });
+        }
+      }
+
+      // Find user and prepare update data
+      const updateData = {};
+      if (fullname) updateData.fullname = fullname;
+      if (email) updateData.email = email;
+      if (contactNo) updateData.contactNo = contactNo;
+      if (location) updateData.address = location;
+
+      // If avatar was uploaded, add it to update data
+      if (req.file) {
+        console.log('Converting file to base64');
+        updateData.avatar = fileToBase64(req.file);
+      }
+
+      console.log('Update data prepared:', Object.keys(updateData));
+
+      // Update user profile
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        updateData,
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          _id: updatedUser._id,
+          fullname: updatedUser.fullname,
+          email: updatedUser.email,
+          contactNo: updatedUser.contactNo,
+          location: updatedUser.address,
+          role: updatedUser.role,
+          avatar: updatedUser.avatar ? true : false // Indicate if avatar exists
+        }
+      });
+    } catch (error) {
+      console.error('Profile update error:', error);
+      res.status(400).json({ 
+        success: false,
+        message: error.message 
+      });
+    }
+  });
 });
 
 // 2a. Delete Account
