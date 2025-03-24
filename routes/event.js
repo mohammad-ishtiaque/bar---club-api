@@ -42,7 +42,7 @@ const upload = multer({
 router.get('/events', protect, async (req, res) => {
   try {
     const events = await Event.find({ status: 'approved' })
-      .select('eventName bar location coverCharge description mapReference')
+      .select('eventName bar location coverCharge description images mapReference')
       .sort({ createdAt: -1 });
     res.json(events);
   } catch (error) {

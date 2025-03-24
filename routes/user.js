@@ -30,7 +30,7 @@ const uploadAvatar = createUploadMiddleware('avatar', 1);
 
 // 1. Edit Profile
 router.put('/edit-profile', protect, (req, res) => {
-  uploadAvatar(req, res, async function(err) {
+  uploadAvatar(req, res, async function (err) {
     try {
       if (err instanceof multer.MulterError) {
         console.log('Multer error:', err);
@@ -94,9 +94,9 @@ router.put('/edit-profile', protect, (req, res) => {
       });
     } catch (error) {
       console.error('Profile update error:', error);
-      res.status(400).json({ 
+      res.status(400).json({
         success: false,
-        message: error.message 
+        message: error.message
       });
     }
   });
@@ -124,7 +124,7 @@ router.put('/change-password', protect, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     const { currentPassword, newPassword, confirmPassword } = req.body;
-    
+
 
     if (!(await bcrypt.compare(currentPassword, user.password))) {
       return res.status(400).json({ message: 'Current password is incorrect' });
@@ -136,7 +136,7 @@ router.put('/change-password', protect, async (req, res) => {
 
     user.password = newPassword;
     await user.save();
-    
+
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -153,23 +153,23 @@ router.post('/logout', protect, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
- 
+
 // 4. Feedback
 router.post('/feedback', protect, async (req, res) => {
   try {
     const { email, description } = req.body;
-    
+
     // Validate inputs
     if (!email || !description) {
       return res.status(400).json({ message: 'Email and description are required' });
     }
-    
+
     // Create new feedback
     const feedback = new Feedback({
       email,
       description
     });
-    
+
     // Check if user is authenticated and add userId if they are
     let token;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -182,9 +182,9 @@ router.post('/feedback', protect, async (req, res) => {
         console.log('Invalid token, saving feedback without userId');
       }
     }
-    
+
     await feedback.save();
-    
+
     res.status(201).json({ message: 'Feedback submitted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -194,15 +194,41 @@ router.post('/feedback', protect, async (req, res) => {
 // 5. Get User Profile
 router.get('/', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password');
+    const user = await User.findById(req.user._id).select('-password').select('');
     if (!user) return res.status(404).json({ message: 'User not found' });
-    
+
     res.json(user);
+    console.log(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
+
+// 6. Get User Profile which are verified
+router.get('/all-verified-participants', protect, async (req, res) => {
+  try {
+    const users = await User.find({ 
+      ageVerificationStatus: 'approved' 
+    })
+    .select('_id fullname address')
+    .lean();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: 'No verified users found' });
+    }
+
+    const formattedUsers = users.map(user => ({
+      _id: user._id,
+      fullname: user.fullname,
+      location: user.address
+    }));
+
+    res.json(formattedUsers);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 
 module.exports = router;
