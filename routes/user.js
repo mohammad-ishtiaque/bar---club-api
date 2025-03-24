@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const User = require('../models/User');
+const Feedback = require('../models/Feedback');
 const { createUploadMiddleware, fileToBase64 } = require('../utils/uploadConfig');
 
 // Middleware to verify JWT
@@ -102,7 +103,7 @@ router.put('/edit-profile', protect, (req, res) => {
 });
 
 // 2a. Delete Account
-router.delete('/settings/delete-account', protect, async (req, res) => {
+router.delete('/delete-account', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -115,10 +116,15 @@ router.delete('/settings/delete-account', protect, async (req, res) => {
 });
 
 // 2b. Change Password
-router.put('/settings/change-password', protect, async (req, res) => {
+router.put('/change-password', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    // Fetch user with password included
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     const { currentPassword, newPassword, confirmPassword } = req.body;
+    
 
     if (!(await bcrypt.compare(currentPassword, user.password))) {
       return res.status(400).json({ message: 'Current password is incorrect' });
@@ -137,17 +143,8 @@ router.put('/settings/change-password', protect, async (req, res) => {
   }
 });
 
-// 3. Support
-router.post('/support', protect, async (req, res) => {
-  try {
-    // Implement your support ticket logic here
-    res.json({ message: 'Support request received' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
 
-// 4. Logout
+// 3. Logout
 router.post('/logout', protect, async (req, res) => {
   try {
     // Implement token invalidation logic if needed
@@ -156,5 +153,56 @@ router.post('/logout', protect, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+ 
+// 4. Feedback
+router.post('/feedback', protect, async (req, res) => {
+  try {
+    const { email, description } = req.body;
+    
+    // Validate inputs
+    if (!email || !description) {
+      return res.status(400).json({ message: 'Email and description are required' });
+    }
+    
+    // Create new feedback
+    const feedback = new Feedback({
+      email,
+      description
+    });
+    
+    // Check if user is authenticated and add userId if they are
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      try {
+        token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        feedback.userId = decoded.userId;
+      } catch (error) {
+        // Token invalid, but we'll still accept the feedback without userId
+        console.log('Invalid token, saving feedback without userId');
+      }
+    }
+    
+    await feedback.save();
+    
+    res.status(201).json({ message: 'Feedback submitted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 5. Get User Profile
+router.get('/', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
 
 module.exports = router;
