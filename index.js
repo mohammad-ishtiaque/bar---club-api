@@ -36,7 +36,7 @@ app.use('/api/user', userRoutes);
 app.use('/api', eventRoutes);  // Added event routes
 app.use('/api/admin', adminRoutes);  // Added admin routes
 app.use('/api/admin', adminProfileRoutes);
-app.use('/api/messages', messageRoutes);
+app.use('/api/chat', messageRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

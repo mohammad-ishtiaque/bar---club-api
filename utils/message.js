@@ -1,5 +1,6 @@
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
+const User = require('../models/User');
 
 const sendMessage = async (req, res) => {
     try {
@@ -59,7 +60,23 @@ const getMessage = async (req, res) => {
     }
 }
 
+
+const getUsersForChat = async (req, res) => {
+    try {
+        const loggedInUserId = req.user._id;
+        const filteredUsers = await User.find({ 
+            _id: { $ne: loggedInUserId },
+            role: 'user'  // Only get users with role 'user'
+        }).select("fullname email avatar");
+        res.status(200).json(filteredUsers);
+    } catch (error) {
+        console.log("error", error.message);
+        res.status(500).json({ message: error.message });
+    }
+}
+
 module.exports = {
     getMessage,
-    sendMessage
+    sendMessage,
+    getUsersForChat
 }
