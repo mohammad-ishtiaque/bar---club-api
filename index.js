@@ -9,8 +9,9 @@ const eventRoutes = require('./routes/event');
 const adminRoutes = require('./routes/admin');
 const messageRoutes = require('./routes/message');
 const adminProfileRoutes = require('./routes/adminProfile');
+const { server, app } = require('./socket/socket');
 
-const app = express();
+// const app = express();
 
 // Middleware
 app.use(cors());
@@ -39,7 +40,7 @@ app.use('/api/admin', adminProfileRoutes);
 app.use('/api/chat', messageRoutes);
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 

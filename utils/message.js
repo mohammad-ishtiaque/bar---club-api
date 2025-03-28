@@ -30,6 +30,13 @@ const sendMessage = async (req, res) => {
 
         await Promise.all([conversation.save(), newMessage.save()]);
 
+        // socket.io functionality
+        const receiverSocketId = getReceiverSocketId(receiverId);
+        if (receiverSocketId) {
+            //io.to is used to send events to a specific client.
+            io.to(receiverSocketId).emit("newMessage", newMessage);
+        }
+
         res.status(200).json(newMessage);
 
     } catch (error) {
